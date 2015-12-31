@@ -29,3 +29,10 @@ Config files
 
 This application includes an example of each config file used named as *foo.conf.example*. These files must be filled and
 renamed to *foo.conf*.
+
+Export reports
+==============
+
+To export reports made using IPython notebooks use the follow command::
+
+    ipython nbconvert templates/reports/sprint_report.ipynb --to html --template templates/utils/hide_input.tpl
