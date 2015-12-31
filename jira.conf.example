@@ -1,0 +1,12 @@
+[connection]
+username = Jira username
+password = Jira password
+base_url = Jira base url
+
+[queries]
+tasks = project = SON AND sprint = "{}" AND issuetype not in subtaskIssueTypes() ORDER BY summary DESC
+subtasks = project = SON AND sprint = "{}" AND issuetype in subtaskIssueTypes() ORDER BY summary DESC
+
+[custom_fields]
+t_shirt_size = customfield_11600
+story_points = customfield_10004

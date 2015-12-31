@@ -1,0 +1,6 @@
+[jira]
+sprint = Sprint name
+date_from = Date from in format YYYY-MM-DD
+date_to = Date to in format YYYY-MM-DD
+usernames = Jira user names separated by comma
+
