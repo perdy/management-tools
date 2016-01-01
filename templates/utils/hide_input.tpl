@@ -54,6 +54,9 @@ div#notebook {
 .folded_code {
   display: none;
 }
+div.prompt {
+  display: none;
+}
 </style>
 
 <script type="text/javascript">
@@ -76,11 +79,5 @@ function showhide(id) {
 #}
 {% set code_cell_numbers = cycler(*range(nb.cells | count)) %}
 
-{% block in_prompt -%}
-{%- endblock in_prompt %}
-
 {% block input %}
 {% endblock input %}
-
-{% block out_prompt -%}
-{%- endblock out_prompt %}
