@@ -16,29 +16,21 @@ __all__ = ['JiraReport']
 
 
 class JiraReport(object):
-    def __init__(self, sprint: str = None, date_from: 'datetime.datetime' = None, date_to: 'datetime.datetime' = None,
-                 usernames: List[str] = None):
+    def __init__(self):
         """
-        Report initialization.
+        Report initialization that uses reports.conf file.
 
-        :param sprint: Sprint name.
-        :param date_from: Initial date to search.
-        :param date_to: Ending date to search.
-        :param usernames: Usernames.
         """
-        if not sprint or not date_from or not date_to or not usernames:
-            config = self._get_config()
-            date_format = '%Y-%m-%d'
+        config = self._get_config()
+        date_format = '%Y/%m/%d'
 
-            sprint = config['sprint']
-            date_from = datetime.datetime.strptime(config['date_from'], date_format)
-            date_to = datetime.datetime.strptime(config['date_to'], date_format)
-            usernames = config['usernames'].strip().replace(' ', '').split(',')
-
-        self.sprint = sprint
-        self.date_from = date_from
-        self.date_to = date_to
-        self.usernames = usernames
+        self.sprints = tuple(config.get('sprints', '').strip().split(','))
+        self.date_from = datetime.datetime.strptime(config['date_from'], date_format)
+        self.date_to = datetime.datetime.strptime(config['date_to'], date_format)
+        self.usernames = tuple(config['usernames'].strip().split(','))
+        self.projects = tuple(config.get('projects', '').strip().split(','))
+        self.issue_types = tuple(config.get('issue_types', '').strip().split(','))
+        self.status = tuple(config.get('status', '').strip().split(','))
 
         # Jira Client
         self.client = JiraClient()
@@ -64,9 +56,9 @@ class JiraReport(object):
 
         return jira
 
-    def tasks(self) -> pd.DataFrame:
+    def resolution_tasks(self) -> pd.DataFrame:
         """
-        Report all tasks of a sprint. The fields included are:
+        Report all tasks given their resolution date. The fields included are:
         - Key.
         - Assignee.
         - Summary.
@@ -75,6 +67,7 @@ class JiraReport(object):
         - Original Estimate.
         - Time Spent.
         - Type.
+        - Project.
 
         :return: Tasks.
         """
@@ -93,15 +86,92 @@ class JiraReport(object):
                 'Original Estimate': fields['aggregatetimeoriginalestimate'] / 3600 if fields[
                     'aggregatetimeoriginalestimate'] else 0,
                 'Time Spent': fields['aggregatetimespent'] / 3600 if fields['aggregatetimespent'] else 0,
+                'Project': fields['project']['name'],
             }
 
-        included_fields = ('key', 'assignee', 'summary', self.custom_fields['story_points'], self.custom_fields['t_shirt_size'],
-                           'aggregatetimeoriginalestimate', 'aggregatetimespent', 'issuetype')
-        tasks = self.client.get_tasks(self.sprint, fields=included_fields)
-        tasks_data = [get_tasks_data(t) for t in tasks['issues']] if tasks and 'issues' in tasks else []
-        return pd.DataFrame.from_records(tasks_data, index='Key')
+        # Create list of fields to retrieve
+        included_fields = (
+            'key',
+            'assignee',
+            'summary',
+            self.custom_fields['story_points'],
+            self.custom_fields['t_shirt_size'],
+            'aggregatetimeoriginalestimate',
+            'aggregatetimespent',
+            'issuetype',
+            'project'
+        )
 
-    def subtasks(self) -> Dict[str, Any]:
+        # Get tasks from client
+        tasks = self.client.get_resolution_tasks(
+            projects=self.projects,
+            issue_types=self.issue_types,
+            status=self.status,
+            date_from=self.date_from.strftime("%Y/%m/%d"),
+            date_to=self.date_to.strftime("%Y/%m/%d"),
+            get_data=get_tasks_data,
+            fields=included_fields,
+        )
+
+        return pd.DataFrame.from_records(tasks, index='Key')
+
+    def sprint_tasks(self) -> pd.DataFrame:
+        """
+        Report all tasks of a sprint. The fields included are:
+        - Key.
+        - Assignee.
+        - Summary.
+        - T-Shirt.
+        - Story Points.
+        - Original Estimate.
+        - Time Spent.
+        - Type.
+        - Project.
+
+        :return: Tasks.
+        """
+
+        def get_tasks_data(issue):
+            fields = issue['fields']
+            t_shirt = fields.get(self.custom_fields['t_shirt_size'], {}) or {}
+
+            return {
+                'Key': issue['key'],
+                'Assignee': fields['assignee']['displayName'] if fields['assignee'] else None,
+                'Summary': fields['summary'],
+                'Type': fields['issuetype']['name'],
+                'T-Shirt': t_shirt.get('value', None),
+                'Story Points': fields.get(self.custom_fields['story_points'], None),
+                'Original Estimate': fields['aggregatetimeoriginalestimate'] / 3600 if fields[
+                    'aggregatetimeoriginalestimate'] else 0,
+                'Time Spent': fields['aggregatetimespent'] / 3600 if fields['aggregatetimespent'] else 0,
+                'Project': fields['project']['name'],
+            }
+
+        # Create list of fields to retrieve
+        included_fields = (
+            'key',
+            'assignee',
+            'summary',
+            self.custom_fields['story_points'],
+            self.custom_fields['t_shirt_size'],
+            'aggregatetimeoriginalestimate',
+            'aggregatetimespent',
+            'issuetype',
+            'project'
+        )
+
+        # Get tasks from client
+        tasks = self.client.get_sprint_tasks(
+            get_data=get_tasks_data,
+            projects=self.projects,
+            sprints=self.sprints,
+            fields=included_fields
+        )
+
+        return pd.DataFrame.from_records(tasks, index='Key')
+
+    def sprint_subtasks(self) -> Dict[str, Any]:
         """
         Report all subtasks of a sprint. The fields included are:
 
@@ -125,7 +195,7 @@ class JiraReport(object):
                 'Assignee': fields['assignee']['displayName'] if fields['assignee'] else None,
             }
 
-        subtasks = self.client.get_subtasks(self.sprint)
+        subtasks = self.client.get_sprint_subtasks(projects=self.projects, sprints=self.sprints)
         subtasks_data = [get_subtasks_data(subtask) for subtask in subtasks]
         return pd.DataFrame.from_records(subtasks_data, index='Key')
 

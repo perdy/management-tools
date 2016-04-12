@@ -96,7 +96,7 @@ class JiraConnector(object):
         """
         self._request(resource=JiraResources.LOGIN, method=HttpMethods.DELETE)
 
-    def search_issues(self, jql: str, start_at: int = 0, max_results: int = 50, fields: Sequence[str] = None,
+    def search_issues(self, jql: str, start_at: int = 0, max_results: int = 1000, fields: Sequence[str] = None,
                       expand: str = None) -> List[Any]:
         """
         Search issues using JQL.
@@ -223,34 +223,67 @@ class JiraClient(object):
 
         return config
 
-    def get_tasks(self, sprint: str, fields: Sequence[str] = None) -> Dict[str, Any]:
+    def _get_tasks(self, jql, get_data, fields: Sequence[str] = None, **kwargs) -> Dict[str, Any]:
         """
-        Get all tasks of a sprint.
+        Gets all tasks given JQL.
 
-        :param sprint: Sprint name.
+        :param jql: JQL.
+        :param get_data: Function to extract data from retrieved JSON.
         :param fields: Tasks fields.
+        :param kwargs: Query format args.
         :return: Tasks.
         """
-        jql = self._queries['tasks'].format(sprint)
-
+        data = []
+        start_at = 0
+        max_results = 1000
+        end = False
         with self._connector:
-            tasks = self._connector.search_issues(jql, fields=fields)
+            while not end:
+                tasks = self._connector.search_issues(jql, start_at=start_at, max_results=max_results, fields=fields)
+                total = int(tasks['total'])
+                end = start_at + max_results > total
+                start_at += max_results + 1
+                data.extend([get_data(t) for t in tasks['issues']] if tasks and 'issues' in tasks else [])
 
-        return tasks
+        return data
 
-    def get_subtasks(self, sprint: str) -> List[Dict[str, Any]]:
+    def get_resolution_tasks(self, get_data, fields: Sequence[str] = None, **kwargs) -> Dict[str, Any]:
         """
         Get all tasks of a sprint.
 
-        :param sprint: Sprint name.
+        :param get_data: Function to extract data from retrieved JSON.
+        :param fields: Tasks fields.
+        :param kwargs: Query format args.
+        :return: Tasks.
+        """
+        jql = self._queries['resolution_tasks'].format(**kwargs)
+        return self._get_tasks(jql, get_data, fields, **kwargs)
+
+    def get_sprint_tasks(self, get_data, fields: Sequence[str] = None, **kwargs) -> Dict[str, Any]:
+        """
+        Get all tasks of a sprint.
+
+        :param get_data: Function to extract data from retrieved JSON.
+        :param fields: Tasks fields.
+        :param kwargs: Query format args.
+        :return: Tasks.
+        """
+        jql = self._queries['sprint_tasks'].format(**kwargs)
+        return self._get_tasks(jql, get_data, fields, **kwargs)
+
+    def get_sprint_subtasks(self, **kwargs) -> List[Dict[str, Any]]:
+        """
+        Get all tasks of a sprint.
+
+        :param kwargs: Query format args.
         :return: List of subtasks.
         """
-        jql = self._queries['subtasks'].format(sprint)
+        jql = self._queries['subtasks'].format(**kwargs)
         included_fields = ('key', 'parent', 'assignee', 'summary', 'aggregatetimeoriginalestimate',
                            'aggregatetimespent', 'issuetype', 'resolution', 'status')
 
         with self._connector:
-            tasks = self._connector.search_issues(jql, max_results=200, fields=included_fields)
+            tasks = self._connector.search_issues(jql, fields=included_fields)
 
         return [t for t in tasks['issues']]
 

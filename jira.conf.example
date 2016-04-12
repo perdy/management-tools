@@ -4,8 +4,9 @@ password = Jira password
 base_url = Jira base url
 
 [queries]
-tasks = project = SON AND sprint = "{}" AND issuetype not in subtaskIssueTypes() ORDER BY summary DESC
-subtasks = project = SON AND sprint = "{}" AND issuetype in subtaskIssueTypes() ORDER BY summary DESC
+resolution_tasks = project in ({projects}) AND issuetype in ({issue_types}) AND status in ({status}) AND resolutiondate >= "{date_from}" AND resolutiondate <= "{date_to}" ORDER BY summary DESC, cf[10004] DESC
+sprint_tasks = project in ({projects}) AND sprint in ({sprints}) AND issuetype not in subtaskIssueTypes() ORDER BY summary DESC, cf[10004] DESC
+sprint_subtasks = project in ({projects}) AND sprint in ({sprints}) AND issuetype in subtaskIssueTypes() ORDER BY summary DESC, cf[10004] DESC
 
 [custom_fields]
 t_shirt_size = customfield_11600
