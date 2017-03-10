@@ -10,8 +10,8 @@ from urllib import parse
 
 import requests
 
-from client.base import BaseClient
-from exceptions import ImproperlyConfigured, LoginException
+from management_tools.client.base import BaseClient
+from management_tools.exceptions import ImproperlyConfigured, LoginException
 
 __all__ = ['Resource', 'Client']
 
