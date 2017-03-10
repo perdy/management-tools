@@ -2,7 +2,7 @@
 Management Tools
 ================
 
-:Version: 0.1.0
+:Version: 0.1.1
 :Status: Production/Stable
 :Author: José Antonio Perdiguero López
 
