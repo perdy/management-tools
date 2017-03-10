@@ -2,7 +2,7 @@ import asyncio
 
 
 class BaseClient:
-    def __init__(self, config_file: str):
+    def __init__(self, *args, **kwargs):
         """
         Client init.
 
