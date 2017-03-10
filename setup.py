@@ -80,6 +80,12 @@ _CLASSIFIERS = (
 
 _KEYWORDS = ' '.join([
     'python',
+    'management',
+    'tools',
+    'jira',
+    'rest',
+    'client',
+    'api',
 ])
 
 setup(
