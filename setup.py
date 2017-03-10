@@ -90,7 +90,7 @@ _KEYWORDS = ' '.join([
 
 setup(
     name='management-tools',
-    version='0.2.0',
+    version='0.3.0',
     description='A set of tools to measure and improve efficiency in team management tasks.',
     long_description=_LONG_DESCRIPTION,
     author='José Antonio Perdiguero López',
