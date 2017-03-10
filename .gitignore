@@ -28,6 +28,11 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+*dist/
+*vendor/
+demo/static/
+./static/
+node_modules/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -42,12 +47,14 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
-.coverage
+.coverage_report/
 .coverage.*
+.coverage
 .cache
 nosetests.xml
 coverage.xml
 *,cover
+.unittests_report/
 
 # Translations
 *.mo
